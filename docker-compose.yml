@@ -32,11 +32,6 @@ services:
       # Keep the legacy port for deployments whose proxy already uses 3001.
       # .env.example selects 3107 for new self-hosted installations.
       - "127.0.0.1:${FRONTEND_PORT:-3001}:3107"
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/prisma:/app/prisma
-      - ./CHANGELOG.md:/app/CHANGELOG.md:ro
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - NEXT_TELEMETRY_DISABLED=1
@@ -144,13 +139,8 @@ services:
     ports:
       - "127.0.0.1:8001:8000"
     volumes:
-      - ./backend/src:/app/src
       - uploads:/app/uploads
       - clips:/app/clips
-      - ./backend/fonts:/app/fonts
-      - ./backend/transitions:/app/transitions
-      # Drop-in SFX and music beds (FX_LIBRARY_DIR); every render machine mounts the same library.
-      - ./backend/fx_library:/app/fx_library
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
@@ -375,13 +365,8 @@ services:
     # scheduled jobs running without a separate service.
     command: [".venv/bin/python", "-m", "src.workers.run_workers"]
     volumes:
-      - ./backend/src:/app/src
       - uploads:/app/uploads
       - clips:/app/clips
-      - ./backend/fonts:/app/fonts
-      - ./backend/transitions:/app/transitions
-      # Drop-in SFX and music beds (FX_LIBRARY_DIR); every render machine mounts the same library.
-      - ./backend/fx_library:/app/fx_library
     environment: &worker-environment
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
@@ -582,13 +567,8 @@ services:
     platform: "${BACKEND_PLATFORM:-linux/amd64}"
     command: [".venv/bin/arq", "src.workers.cron_worker.CronWorkerSettings"]
     volumes:
-      - ./backend/src:/app/src
       - uploads:/app/uploads
       - clips:/app/clips
-      - ./backend/fonts:/app/fonts
-      - ./backend/transitions:/app/transitions
-      # Drop-in SFX and music beds (FX_LIBRARY_DIR); every render machine mounts the same library.
-      - ./backend/fx_library:/app/fx_library
     environment: *worker-environment
     restart: unless-stopped
     depends_on:
@@ -616,7 +596,6 @@ services:
     platform: "${BACKEND_PLATFORM:-linux/amd64}"
     command: [".venv/bin/arq", "src.workers.ai_worker.AIWorkerSettings"]
     volumes:
-      - ./backend/src:/app/src
       - uploads:/app/uploads
     environment: *worker-environment
     restart: unless-stopped
