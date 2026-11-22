@@ -582,6 +582,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+  networks:
+    - default
+    - content-os-net
 
   # AI editing: turns an editor instruction into draft changes with Claude.
   # Its own queue and container, so edits answer in seconds while the main
@@ -708,3 +711,8 @@ networks:
   ollama-amd:
     external: true
     name: ollama-amd_default
+  content-os-net:
+    external: true
+    name: content-os-net
+
+    
