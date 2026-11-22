@@ -598,6 +598,9 @@ services:
     volumes:
       - uploads:/app/uploads
     environment: *worker-environment
+    networks:
+      - default
+      - ollama-amd
     restart: unless-stopped
     depends_on:
       postgres:
@@ -702,3 +705,6 @@ volumes:
 networks:
   default:
     name: supoclip-network
+  ollama-amd:
+    external: true
+    name: ollama-amd_default
