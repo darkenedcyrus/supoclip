@@ -361,6 +361,7 @@ services:
     networks:
       - default
       - content-os-net
+      - ollama-amd
     # Same platform override as the backend service.
     platform: "${BACKEND_PLATFORM:-linux/amd64}"
     # Starts the video worker and, unless EMBED_CRON_WORKER=0, the cron worker.
