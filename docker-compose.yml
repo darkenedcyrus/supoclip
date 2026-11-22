@@ -358,6 +358,9 @@ services:
       args:
         BACKEND_CPU_ONLY: ${BACKEND_CPU_ONLY:-false}
     container_name: supoclip-worker
+    networks:
+      - default
+      - content-os-net
     # Same platform override as the backend service.
     platform: "${BACKEND_PLATFORM:-linux/amd64}"
     # Starts the video worker and, unless EMBED_CRON_WORKER=0, the cron worker.
@@ -582,9 +585,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-  networks:
-    - default
-    - content-os-net
 
   # AI editing: turns an editor instruction into draft changes with Claude.
   # Its own queue and container, so edits answer in seconds while the main
