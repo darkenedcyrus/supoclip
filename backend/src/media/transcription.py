@@ -330,7 +330,8 @@ def get_video_transcript(
     logger.info(f"Getting transcript for: {video_path}")
     runtime_config = get_config()
     provider = runtime_config.transcription_provider
-
+    if provider == "whisper_api":
+        return _get_transcript_with_whisper_api(video_path, runtime_config)
     if provider == "whisper":
         return _get_transcript_with_whisper(video_path, runtime_config)
     if provider == "youtube_captions":
@@ -413,7 +414,55 @@ def _get_transcript_with_assemblyai(
     finally:
         client.http_client.close()
 
+def _get_transcript_with_whisper_api(video_path: Path, runtime_config) -> str:
+    """Use the existing external Whisper server, preserving word timestamps."""
+    import os
 
+    url = os.getenv(
+        "WHISPER_API_URL",
+        "http://whisper-worker:9000/v1/audio/transcriptions",
+    )
+    audio_path = _prepare_audio_for_transcription(video_path)
+
+    data = {
+        "model": "whisper-1",
+        "response_format": "verbose_json",
+        "timestamp_granularities[]": "word",
+    }
+
+    if runtime_config.transcription_language:
+        data["language"] = runtime_config.transcription_language.split("_")[0]
+
+    with open(audio_path, "rb") as audio:
+        with httpx.Client(timeout=3600) as client:
+            response = client.post(
+                url,
+                data=data,
+                files={"file": (audio_path.name, audio, "audio/mpeg")},
+            )
+            response.raise_for_status()
+            result = response.json()
+
+    words = result.get("words") or []
+    segments = result.get("segments") or []
+
+    if not segments:
+        raise RuntimeError("Whisper API returned no transcript segments")
+
+    for segment in segments:
+        start = float(segment.get("start", 0))
+        end = float(segment.get("end", start))
+        segment["words"] = [
+            w for w in words
+            if start <= float(w.get("start", -1)) < end
+        ]
+
+    formatted = format_transcript_for_analysis(result)
+    cache_transcript_data(video_path, result)
+
+    logger.info("Whisper API: %d words transcribed", len(words))
+    return "\n".join(formatted)
+    
 def _get_transcript_with_whisper(video_path: Path, runtime_config) -> str:
     """Get transcript using local Whisper with word-level timestamps."""
     model_name = runtime_config.whisper_model
